@@ -1,3 +1,13 @@
-from django.shortcuts import render
+from .serializers import UserProfileSerializer, BookingSerializer, EventSerializer
+from django.contrib.auth.models import User
+from rest_framework import generics
 
-# Create your views here.
+class EventListCreateView(generics.ListCreateAPIView):
+
+
+class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
+
+
+class BookinglistCreateView(generics.ListCreateAPIView):
+    
+
