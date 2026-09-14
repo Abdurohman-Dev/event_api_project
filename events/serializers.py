@@ -18,4 +18,5 @@ class BookingSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
     class Meta: 
         model = Booking
-        fields = '__all__'
+        fields = ['id','user','event','tickets_booked','booking_date','status']
+        read_only_fields = ['user', 'booking_date']

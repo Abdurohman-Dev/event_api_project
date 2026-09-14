@@ -2,7 +2,7 @@ from .serializers import UserProfileSerializer, BookingSerializer, EventSerializ
 from django.contrib.auth.models import User
 from .models import Booking, Event , UserProfile
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permissions import IsOrganizerOrReadOnly
 
 class EventListCreateView(generics.ListCreateAPIView):
@@ -19,5 +19,11 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsOrganizerOrReadOnly]
 
 class BookingListCreateView(generics.ListCreateAPIView):
-    queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user= self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
