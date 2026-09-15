@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'rest_framework',
     'events',
     'rest_framework_simplejwt',
@@ -136,5 +137,8 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': (
         'drf_spectacular.openapi.AutoSchema'
-    )
+    ),
+    'DEFAULT_FILTERING_BACKENDS': [
+        'django_filter.rest_framework.DjangoFilterBackend',
+    ],
 }

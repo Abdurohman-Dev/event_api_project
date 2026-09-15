@@ -1,14 +1,23 @@
 from .serializers import UserProfileSerializer, BookingSerializer, EventSerializer
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from django.contrib.auth.models import User
 from .models import Booking, Event , UserProfile
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permissions import IsOrganizerOrReadOnly
 
+
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter]
+    filterset_fields = ['location','organizer']
+    search_fields = ['title','description']
+    ordering_fields = ['date_time', 'created_at']
+    
 
     def perform_create(self, serializer):
         serializer.save(organizer= self.request.user)
