@@ -35,4 +35,11 @@ class BookingListCreateView(generics.ListCreateAPIView):
         return Booking.objects.filter(user= self.request.user)
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+class UserProfileview(generics.RetrieveUpdateAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
     
+    def get_object(self):
+        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        return profile
