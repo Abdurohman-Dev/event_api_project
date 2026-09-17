@@ -44,3 +44,12 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         profile, created = UserProfile.objects.get_or_create(user=self.request.user)
         return profile
+
+class BookingCancelView(generics.RetrieveUpdateAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user = self.request.user)
+    def perform_update(self, serializer):
+        serializer.save(status = "Cancelled")

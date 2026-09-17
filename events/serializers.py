@@ -24,13 +24,21 @@ class BookingSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'booking_date']
         
     def validate(self, data):
-        event = data.get('event')
-        tickets_booked = data.get('tickets_booked')
-        if tickets_booked <= 0 :
-            raise serializers.ValidationError("መግዛት የሚቻለው ትኬት ከ 0 በላይ መሆን አለበት! ")
-        total_booked = Booking.objects.filter(status = "Confirmed" , event=event)
-        total_tickets = total_booked.aggregate(Sum('tickets_booked'))['tickets_booked__sum'] or 0
-        remaining_tickets = event.total_tickets - total_tickets
-        if tickets_booked > remaining_tickets :
-            raise serializers.ValidationError (f"በቂ ቲኬት የለም የቀረው ቲኬት ብዛት {remaining_tickets} ብቻ ነው።")
+        if self.instance and self.instance.status == 'Cancelled':
+                    raise serializers.ValidationError("ይህ ቲኬት አስቀድሞ ተሰርዟል!")
+        if not self.instance:
+            event = data.get('event')
+            tickets_booked = data.get('tickets_booked')
+
+            if tickets_booked <= 0 :
+                raise serializers.ValidationError("መግዛት የሚቻለው ትኬት ከ 0 በላይ መሆን አለበት! ")
+            
+            total_booked = Booking.objects.filter(status = "Confirmed" , event=event)
+            total_tickets = total_booked.aggregate(Sum('tickets_booked'))['tickets_booked__sum'] or 0
+            remaining_tickets = event.total_tickets - total_tickets
+
+            if tickets_booked > remaining_tickets :
+                raise serializers.ValidationError (f"በቂ ቲኬት የለም የቀረው ቲኬት ብዛት {remaining_tickets} ብቻ ነው።")
         return data
+    
+    
