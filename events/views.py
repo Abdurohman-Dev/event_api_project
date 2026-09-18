@@ -5,13 +5,14 @@ from django.contrib.auth.models import User
 from .models import Booking, Event , UserProfile
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-from .permissions import IsOrganizerOrReadOnly
+from .permissions import IsOrganizerOrReadOnly, IsOwnerOrReadOnly, IsAdminOrReadOnly
 
 
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
+    
 
     filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_fields = ['location','organizer']
@@ -29,7 +30,7 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class BookingListCreateView(generics.ListCreateAPIView):
     serializer_class = BookingSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         return Booking.objects.filter(user= self.request.user)
@@ -39,7 +40,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
 class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsOrganizerOrReadOnly]
 
     def get_object(self):
         profile, created = UserProfile.objects.get_or_create(user=self.request.user)
@@ -47,7 +48,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 class BookingCancelView(generics.RetrieveUpdateAPIView):
     serializer_class = BookingSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         return Booking.objects.filter(user = self.request.user)
