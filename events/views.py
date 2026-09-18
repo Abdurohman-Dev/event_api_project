@@ -6,13 +6,14 @@ from .models import Booking, Event , UserProfile
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permissions import IsOrganizerOrReadOnly, IsOwnerOrReadOnly, IsAdminOrReadOnly
-
+from .pagination import StandardResultsSetPagination
 
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     permission_classes = [IsAdminOrReadOnly]
-    
+    pagination_class = StandardResultsSetPagination
+
 
     filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_fields = ['location','organizer']
@@ -54,3 +55,4 @@ class BookingCancelView(generics.RetrieveUpdateAPIView):
         return Booking.objects.filter(user = self.request.user)
     def perform_update(self, serializer):
         serializer.save(status = "Cancelled")
+        
