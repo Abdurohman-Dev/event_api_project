@@ -7,6 +7,9 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from .permissions import IsOrganizerOrReadOnly, IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .pagination import StandardResultsSetPagination
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
+from rest_framework import status
 
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
@@ -55,4 +58,18 @@ class BookingCancelView(generics.RetrieveUpdateAPIView):
         return Booking.objects.filter(user = self.request.user)
     def perform_update(self, serializer):
         serializer.save(status = "Cancelled")
-        
+
+class EventBookingView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = BookingSerializer
+
+    def post(self, request, pk):
+        event = get_object_or_404(Event , pk=pk)
+        if Booking.objects.filter(user=request.user, event=event).exists():
+            return Response({"error": "You have already booked a ticket for this event"})
+        if event.available_tickets <= 0:
+            return Response({"error": "No tickets available"}, status=status.HTTP_400_BAD_REQUEST)
+        event.available_tickets -= 1
+        event.save()
+        Booking.objects.create(user = request.user, event=event)
+        return Response ({"message": "Ticket booked successfull!"}, status=status.HTTP_201_CREATED)
