@@ -73,3 +73,18 @@ class EventBookingView(generics.GenericAPIView):
         event.save()
         Booking.objects.create(user = request.user, event=event)
         return Response ({"message": "Ticket booked successfull!"}, status=status.HTTP_201_CREATED)
+
+class UserHostedEventsView(generics.ListAPIView):
+    serializer_class = EventSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Event.objects.filter(organizer = self.request.user)
+
+class UserBookingsView(generics.ListAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user = self.request.user)
+    
