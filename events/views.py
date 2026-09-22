@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 class EventListCreateView(generics.ListCreateAPIView):
-    queryset = Event.objects.all()
+    queryset = Event.objects.select_related('organizer').all().order_by('-id')
     serializer_class = EventSerializer
     permission_classes = [IsAdminOrReadOnly]
     pagination_class = StandardResultsSetPagination
@@ -37,7 +37,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        return Booking.objects.filter(user= self.request.user)
+        return Booking.objects.filter(user= self.request.user).select_related('event', 'user')
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
@@ -47,7 +47,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated,IsOrganizerOrReadOnly]
 
     def get_object(self):
-        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        profile, created = UserProfile.objects.select_related('user').get_or_create(user=self.request.user)
         return profile
 
 class BookingCancelView(generics.RetrieveUpdateAPIView):
@@ -55,7 +55,7 @@ class BookingCancelView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        return Booking.objects.filter(user = self.request.user)
+        return Booking.objects.filter(user = self.request.user).select_related('event', 'user')
     def perform_update(self, serializer):
         serializer.save(status = "Cancelled")
 
@@ -79,12 +79,12 @@ class UserHostedEventsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Event.objects.filter(organizer = self.request.user)
+        return Event.objects.filter(organizer = self.request.user).select_related('organizer')
 
 class UserBookingsView(generics.ListAPIView):
     serializer_class = BookingSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Booking.objects.filter(user = self.request.user)
+        return Booking.objects.filter(user = self.request.user).select_related('event', 'user')
     
