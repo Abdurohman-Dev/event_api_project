@@ -1,4 +1,9 @@
-from .views import EventDetailView,EventListCreateView,BookingListCreateView, UserProfileView, BookingCancelView, EventBookingView, UserHostedEventsView, UserBookingsView
+from .views import (
+    EventDetailView,EventListCreateView,
+    BookingListCreateView, UserProfileView, 
+    BookingCancelView, EventBookingView, 
+    UserHostedEventsView, UserBookingsView, 
+    RegisterView)
 from django.urls import path
 
 urlpatterns = [
@@ -10,4 +15,5 @@ urlpatterns = [
     path('events/<int:pk>/book/', EventBookingView.as_view(), name='event-book'),
     path('events/my-events/', UserHostedEventsView.as_view(), name='my-events'),
     path('bookings/my-bookings/', UserBookingsView.as_view(), name='my-bookings'),
+    path('register/', RegisterView.as_view(), name= 'register')
 ]

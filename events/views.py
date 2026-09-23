@@ -1,15 +1,20 @@
-from .serializers import UserProfileSerializer, BookingSerializer, EventSerializer
+from .serializers import UserProfileSerializer, BookingSerializer, EventSerializer, RegisterSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.contrib.auth.models import User
 from .models import Booking, Event , UserProfile
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, AllowAny
 from .permissions import IsOrganizerOrReadOnly, IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .pagination import StandardResultsSetPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
+    permission_classes = [AllowAny]
 
 class EventListCreateView(generics.ListCreateAPIView):
     queryset = Event.objects.select_related('organizer').all().order_by('-id')
