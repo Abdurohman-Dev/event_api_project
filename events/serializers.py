@@ -31,11 +31,17 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = '__all__'
 
+class EventSummarySerializer(serializers.ModelSerializer):
+     class Meta:
+          model = Event
+          fields = ['id', 'title', 'location', 'date_time', 'ticket_price']
+
 class BookingSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
+    event_detail = EventSummarySerializer(source= 'event',read_only = True)
     class Meta: 
         model = Booking
-        fields = ['id','user','event','tickets_booked','booking_date','status']
+        fields = ['id','user','event','event_detail','tickets_booked','booking_date','status']
         read_only_fields = ['user', 'booking_date']
         
     def validate(self, data):
