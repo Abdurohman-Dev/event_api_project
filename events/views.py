@@ -26,7 +26,7 @@ class EventListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend,SearchFilter,OrderingFilter]
     filterset_fields = ['location','organizer']
     search_fields = ['title','description']
-    ordering_fields = ['date_time', 'created_at']
+    ordering_fields = ['date_time', 'created_at','ticket_price']
     
 
     def perform_create(self, serializer):

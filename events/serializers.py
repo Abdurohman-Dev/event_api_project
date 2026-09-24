@@ -61,5 +61,3 @@ class BookingSerializer(serializers.ModelSerializer):
             if tickets_booked > remaining_tickets :
                 raise serializers.ValidationError (f"በቂ ቲኬት የለም የቀረው ቲኬት ብዛት {remaining_tickets} ብቻ ነው።")
         return data
-    
-    
