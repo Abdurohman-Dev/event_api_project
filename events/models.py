@@ -49,3 +49,4 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking by {self.user.username} - {self.status}"
 
+

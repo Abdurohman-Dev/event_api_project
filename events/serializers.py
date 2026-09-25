@@ -29,8 +29,7 @@ class EventSerializer(serializers.ModelSerializer):
     organizer = serializers.ReadOnlyField(source='organizer.username')
     class Meta:
         model = Event
-        fields = '__all__'
-
+        fields = '__all__';
 class EventSummarySerializer(serializers.ModelSerializer):
      class Meta:
           model = Event
