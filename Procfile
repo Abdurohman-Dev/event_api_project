@@ -1,1 +1,1 @@
-web: gunicorn event_api_project.wsgi
+web: gunicorn config.wsgi:application
