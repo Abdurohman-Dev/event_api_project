@@ -1,0 +1,1 @@
+web: gunicorn event_api_project.wsgi

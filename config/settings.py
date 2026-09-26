@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-z5!f%=#_lmcyx*8892@0qj=s)h$^fn1+8hamwc-a3u4dny+i*o
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -153,3 +153,5 @@ REST_FRAMEWORK = {
         'user': '30/minute'
     },
 }
+import os 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
