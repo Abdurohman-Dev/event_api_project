@@ -65,3 +65,44 @@ def test_filter_events_by_location():
     assert response.status_code == 200
     assert len(response.data['results']) == 1 
     assert response.data['results'][0]['location'] == "Semera"
+
+@pytest.mark.django_db
+def test_get_single_event_detail():
+    user = User.objects.create_user(username = 'organizer2' , password='password123')
+
+    event = Event.objects.create(
+        title="Event C", description="Desc", location="Dire Dawa", total_tickets=100, available_tickets=100,
+        date_time="2026-10-17T10:00:00Z", ticket_price="75.00", organizer=user
+    )
+    client = APIClient()
+
+    url = reverse('event-detail', args=[event.id])
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.data['title'] == event.title
+
+@pytest.mark.django_db
+def test_update_event():
+    user = User.objects.create_user(username = 'organizer4', password = 'password123')
+    event = Event.objects.create(
+        title="Event D", description="Desc", location="Dire Dawa", total_tickets=100, available_tickets=100,
+        date_time="2026-10-17T10:00:00Z", ticket_price="75.00", organizer=user
+    )
+    client = APIClient()
+    client.force_authenticate(user = user)
+    updated_data = {
+    "title": "Updated Event Title",
+    "description": "Updated Desc",
+    "location": "Addis Ababa",
+    "total_tickets": 100,
+    "available_tickets": 100,
+    "date_time": "2026-10-17T10:00:00Z",
+    "ticket_price": "43.00", 
+    "category": "Tech"
+    }
+    url = reverse('event-detail', args=[event.id])
+    response = client.put(url, updated_data, format='json')
+
+    assert response.status_code == 200, f"Error details: {response.data}"
+    assert response.data['title'] == "Updated Event Title"
