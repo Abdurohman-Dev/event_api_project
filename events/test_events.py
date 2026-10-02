@@ -17,13 +17,11 @@ def test_get_events_list():
 @pytest.mark.django_db
 def test_create_event():
     client = APIClient()
-    # Organizer role ያለው ወይም staff/superuser የሆነ ዩዘር መፍጠር
     user = User.objects.create_user(
         username='organizeruser', 
         password='password123',
-        is_staff=True  # ወይም role='organizer' ካለህ
+        is_staff=True
     )
-    # ካስፈለገ እንደ ሞዴልህ አቀማመጥ ፊልድ ካለህ: user.role = 'organizer'; user.save()
     user.role = 'Organizer'; user.save()
     
     client.force_authenticate(user=user)
@@ -44,10 +42,9 @@ def test_create_event():
     assert response.status_code == 201, f"Error details: {response.data}"
 @pytest.mark.django_db
 def test_filter_events_by_location():
-    Event.objects.all().delete()  # ከፊት ያሉትን ኢቨንቶች ሁሉ አጥፋ
+    Event.objects.all().delete()
     user = User.objects.create_user(username='organizer1', password='password123')
-    
-    # ለ organizer ሁልጊዜ User instance መስጠት አለብን
+
     Event.objects.create(
         title="Event A", description="Desc", location="Semera", total_tickets=100, available_tickets=100,
         date_time="2026-10-15T10:00:00Z", ticket_price="50.00", organizer=user
@@ -106,3 +103,36 @@ def test_update_event():
 
     assert response.status_code == 200, f"Error details: {response.data}"
     assert response.data['title'] == "Updated Event Title"
+
+@pytest.mark.django_db
+def test_delete_event():
+    user = User.objects.create_user(username= "organizer", password= "password123")
+    event = Event.objects.create(
+            title="Event E", description="Desc", location="Dire Dawa", total_tickets=100, available_tickets=100,
+            date_time="2026-10-17T10:00:00Z", ticket_price="75.00", organizer=user
+        )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    url = reverse('event-detail', args=[event.id])
+    response = client.delete(url)
+
+    assert response.status_code == 204
+    assert Event.objects.filter(id=event.id).exists() == False
+
+@pytest.mark.django_db
+def test_unauthorized_user_cannot_create_event():
+    client = APIClient()
+    payload = {
+            "title": "Tech Conference 2026",
+            "description": "A big tech event",
+            "location": "Semera",
+            "total_tickets": 100,
+            "category": "Tech",
+            "date_time": "2026-10-15T10:00:00Z",
+            "ticket_price": "50.00"
+        }
+    url = reverse('event-list')
+    response = client.post(url, payload, format='json')
+
+    assert response.status_code == 401, f"Error detail: {response.data}"
+    assert Event.objects.count() == 0 
