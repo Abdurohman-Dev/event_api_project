@@ -136,3 +136,28 @@ def test_unauthorized_user_cannot_create_event():
 
     assert response.status_code == 401, f"Error detail: {response.data}"
     assert Event.objects.count() == 0 
+
+@pytest.mark.django_db
+def test_non_organizer_cannot_update_event():
+    user = User.objects.create_user(username='organizer', password='password123')
+    event = Event.objects.create(
+                title="Event F", description="Desc", location="Dire Dawa", total_tickets=100, available_tickets=100,
+                date_time="2026-10-17T10:00:00Z", ticket_price="75.00", organizer=user
+            )
+    user2 = User.objects.create_user(username='Attackerr', password='password1234')
+    updated_data = {
+        "title": "Hacked Event Title",
+        "description": "Updated Desc",
+        "location": "Addis Ababa",
+        "total_tickets": 100,
+        "available_tickets": 100,
+        "date_time": "2026-10-17T10:00:00Z",
+        "ticket_price": "43.00", 
+        "category": "Tech"
+        }
+    url = reverse('event-detail', args=[event.id])
+    client = APIClient()
+    client.force_authenticate(user=user2)
+    response = client.put(url, updated_data, format= 'json')
+
+    assert response.status_code == 403
