@@ -20,8 +20,83 @@ def test_user_cannot_book_more_tickets_than_available():
     url = reverse('bookings')
     payload = {
             "event": event.id ,
-            "tickets_booked": 10
+            "tickets_booked": 11
         }
     response = client.post(url, payload, format='json')
     assert response.status_code == 400, f"Error detail: {response.data}"
     assert Booking.objects.count() == 0
+
+@pytest.mark.django_db
+def test_user_can_successfully_book_tickets():
+    user = User.objects.create_user(username='organizer2', password='password123')
+    event = Event.objects.create(
+                title="Event B", description="Desc", location="Addis Ababa", 
+                total_tickets=10, available_tickets=10,
+                date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+            )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    payload={
+        "event": event.id ,
+        "tickets_booked" : 3
+    }
+    url = reverse('bookings')
+    response = client.post(url, payload, format='json')
+
+    assert response.status_code == 201
+    assert Booking.objects.count() == 1
+    booking = Booking.objects.first()
+    assert booking.tickets_booked == 3
+
+@pytest.mark.django_db
+def test_cannot_book_zero_or_negative_tickets():
+    user = User.objects.create_user(username='organizer2', password='password123')
+    event = Event.objects.create(
+                title="Event B", description="Desc", location="Addis Ababa", 
+                total_tickets=10, available_tickets=10,
+                date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+            )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    payload={
+        "event": event.id,
+        "tickets_booked": 0
+    }
+    url = reverse('bookings')
+    response = client.post(url, payload, format='json')
+
+    assert response.status_code == 400
+    assert Booking.objects.count() == 0
+
+@pytest.mark.django_db
+def test_multiple_bookings_accumulate_correctly():
+    user = User.objects.create_user(username='customer1', password='password1234')
+    userb = User.objects.create_user(username='customer2', password='password123')
+    event = Event.objects.create(
+            title="Event B", description="Desc", location="Addis Ababa", 
+            total_tickets=10, available_tickets=10,
+            date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+        )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    payload= {
+        "event": event.id , 
+        "tickets_booked": 4
+    }
+    url = reverse('bookings')
+    response = client.post(url, payload, format='json')
+
+    assert response.status_code == 201
+
+    client2 = APIClient()
+    client2.force_authenticate(user = userb)
+    response = client2.post(url, payload, format='json')
+
+    assert response.status_code == 201
+
+    client = APIClient()
+    client.force_authenticate(user = user)
+    response = client.post(url, payload, format='json')
+
+    assert response.status_code == 400
+    assert Booking.objects.count() == 2
