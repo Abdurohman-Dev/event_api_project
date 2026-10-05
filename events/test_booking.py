@@ -100,3 +100,76 @@ def test_multiple_bookings_accumulate_correctly():
 
     assert response.status_code == 400
     assert Booking.objects.count() == 2
+
+@pytest.mark.django_db
+def test_user_can_get_their_own_bookings():
+    usera = User.objects.create_user(username='organizer', password='password123')
+    userb = User.objects.create_user(username='organizer2', password='password123')
+    event = Event.objects.create(
+        title="Event B", description="Desc", location="Addis Ababa", 
+        total_tickets=10, available_tickets=10,
+        date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=usera
+    )
+    payload = {
+        "event": event.id ,
+        "tickets_booked":  4
+    }
+    client1 = APIClient()
+    client1.force_authenticate(user=usera)
+    url = reverse('bookings')
+    response = client1.post(url, payload, format='json')
+    client2 = APIClient()
+    client2.force_authenticate(user = userb)
+    response = client2.post(url, payload, format='json')
+    response = client1.get(url)
+
+    assert response.status_code == 200
+    assert len(response.data['results']) == 1
+
+@pytest.mark.django_db
+def test_unauthenticated_user_cannot_access_bookings():
+    client = APIClient()
+    url = reverse('bookings')
+    response = client.post(url)
+    response = client.get(url)
+
+    assert response.status_code == 401
+
+@pytest.mark.django_db
+def test_user_can_cancel_booking_and_tickets_are_freed():
+    user1 = User.objects.create_user(username='customer1', password='password123')
+    user2 = User.objects.create_user(username='customer2', password='password123')
+    event = Event.objects.create(
+            title="Event B", description="Desc", location="Addis Ababa", 
+            total_tickets=5, available_tickets=5,
+            date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user1
+        )
+    payload = {
+            "event": event.id ,
+            "tickets_booked":  5
+        }
+    client1 = APIClient()
+    client1.force_authenticate(user = user1)
+    url = reverse('bookings')
+    response = client1.post(url, payload, format='json')
+
+    assert response.status_code == 201
+    payload2 = {
+                "event": event.id ,
+                "tickets_booked":  1
+            }
+    booking = Booking.objects.first()
+    client2 = APIClient()
+    client2.force_authenticate(user = user2)
+    response = client2.post(url, payload2, format='json')
+
+    assert response.status_code == 400
+
+    response = client1.post(reverse('booking-cancel', kwargs={'pk': booking.id}))
+
+    assert response.status_code == 200
+
+    response = client2.post(url, payload2, format='json')
+
+    assert response.status_code == 201
+    assert Booking.objects.count() == 2
