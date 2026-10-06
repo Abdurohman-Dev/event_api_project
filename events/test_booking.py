@@ -12,7 +12,7 @@ def test_user_cannot_book_more_tickets_than_available():
     event = Event.objects.create(
             title="Event B", description="Desc", location="Addis Ababa", 
             total_tickets=10, available_tickets=5,
-            date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+            date_time="2026-10-16T10:00:00Z", ticket_price="100.00", category ="Tech", organizer=user
         )
     customer = User.objects.create_user(username='customer1', password='password123')
     client = APIClient()
@@ -44,7 +44,7 @@ def test_user_can_successfully_book_tickets():
     response = client.post(url, payload, format='json')
 
     assert response.status_code == 201
-    assert Booking.objects.count() == 1
+    assert Booking.objects.count() == 1 
     booking = Booking.objects.first()
     assert booking.tickets_booked == 3
 
@@ -128,9 +128,19 @@ def test_user_can_get_their_own_bookings():
 
 @pytest.mark.django_db
 def test_unauthenticated_user_cannot_access_bookings():
+    user = User.objects.create_user(username='organizer2', password='password123')
+    event = Event.objects.create(
+        title="Event B", description="Desc", location="Addis Ababa", 
+        total_tickets=10, available_tickets=10,
+        date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+    )
+    payload = {
+        "event": event.id ,
+        "tickets_booked":  4
+    }
     client = APIClient()
     url = reverse('bookings')
-    response = client.post(url)
+    response = client.post(url, payload, format='json')
     response = client.get(url)
 
     assert response.status_code == 401
@@ -173,3 +183,54 @@ def test_user_can_cancel_booking_and_tickets_are_freed():
 
     assert response.status_code == 201
     assert Booking.objects.count() == 2
+
+@pytest.mark.django_db
+def test_booking_list_includes_event_detail():
+    user = User.objects.create_user(username='organizer', password='password123')
+    event = Event.objects.create(
+        title="Tech Expo 2026", description="Desc", location="Addis Ababa", 
+        total_tickets=10, available_tickets=10,
+        date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+    )
+    payload = {
+        "event": event.id ,
+        "tickets_booked":  4
+    }
+    client = APIClient()
+    client.force_authenticate(user=user)
+    url = reverse('bookings')
+    response = client.post(url, payload, format='json')
+
+    booking = Booking.objects.first()
+    assert response.status_code == 201 
+
+    response = client.get(reverse('bookings'))
+
+    assert response.status_code == 200
+    assert 'event_detail' in response.data['results'][0]
+    assert response.data['results'][0]['event_detail']['title'] == "Tech Expo 2026"
+
+@pytest.mark.django_db
+def test_prevent_double_booking_cancellation_attempt():
+    user = User.objects.create_user(username='organizer', password='password123')
+    event = Event.objects.create(
+        title="Tech Expo 2026", description="Desc", location="Addis Ababa", 
+        total_tickets=10, available_tickets=10,
+        date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user
+    )
+    payload = {
+        "event": event.id ,
+        "tickets_booked":  2
+    }
+    client = APIClient()
+    client.force_authenticate(user = user)
+    url = reverse('bookings')
+    response = client.post(url, payload, format='json')
+    booking = Booking.objects.first()
+    assert response.status_code == 201 
+
+    response = client.post(reverse('booking-cancel', kwargs={'pk': booking.id}))
+    assert response.status_code == 200
+
+    response = client.post(reverse('booking-cancel', kwargs={'pk': booking.id}))
+    assert response.status_code == 400 

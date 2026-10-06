@@ -101,5 +101,5 @@ class UserBookingsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Booking.objects.filter(user = self.request.user).select_related('event', 'user')
+        return Booking.objects.filter(user = self.request.user).select_related('event', 'user').order_by('-id')
     
