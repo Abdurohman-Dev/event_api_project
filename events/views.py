@@ -36,7 +36,7 @@ class EventListCreateView(generics.ListCreateAPIView):
         serializer.save(organizer= self.request.user)
 
 class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Event.objects.all()
+    queryset = Event.objects.select_related('organizer').all()
     serializer_class = EventSerializer
     permission_classes = [IsOrganizerOrReadOnly]
 

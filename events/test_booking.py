@@ -234,3 +234,36 @@ def test_prevent_double_booking_cancellation_attempt():
 
     response = client.post(reverse('booking-cancel', kwargs={'pk': booking.id}))
     assert response.status_code == 400 
+
+@pytest.mark.django_db
+def test_user_cannot_cancel_others_booking():
+    user1 = User.objects.create_user(username='customer1', password='password123')
+    user2 = User.objects.create_user(username='customer2', password='password123')
+    event = Event.objects.create(
+        title="Tech Expo 2026", description="Desc", location="Addis Ababa", 
+        total_tickets=10, available_tickets=10,
+        date_time="2026-10-16T10:00:00Z", ticket_price="100.00",category ="Tech", organizer=user1
+    )
+    payload = {
+        "event": event.id ,
+        "tickets_booked":  2
+    }    
+    client1 = APIClient()
+    client1.force_authenticate(user=user1)
+    url = reverse('bookings')
+    response = client1.post(url, payload, format='json')
+    booking = Booking.objects.first()
+
+    assert response.status_code == 201
+
+    client2 = APIClient()
+    client2.force_authenticate(user = user2)
+    response = client2.post(reverse('booking-cancel', kwargs={'pk': booking.id}))
+
+    assert response.status_code == 404
+    booking.refresh_from_db()
+    assert booking.status == "Confirmed"
+
+@pytest.mark.django_db
+def test_cannot_book_for_past_event():
+    
