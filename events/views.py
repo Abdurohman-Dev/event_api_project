@@ -30,6 +30,7 @@ class EventListCreateView(generics.ListCreateAPIView):
         'ticket_price': ['gte', 'lte'],
         }
     search_fields = ['title','description', 'location'],
+
     ordering_fields = ['date_time', 'created_at','ticket_price']
     
     def perform_create(self, serializer):
@@ -45,7 +46,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        return Booking.objects.filter(user= self.request.user).select_related('event', 'user')
+        return Booking.objects.filter(user= self.request.user).select_related('event', 'user').order_by('-id')
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 

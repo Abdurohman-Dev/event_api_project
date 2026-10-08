@@ -118,9 +118,12 @@ def test_user_can_get_their_own_bookings():
     client1.force_authenticate(user=usera)
     url = reverse('bookings')
     response = client1.post(url, payload, format='json')
+    assert response.status_code == 201
+
     client2 = APIClient()
     client2.force_authenticate(user = userb)
     response = client2.post(url, payload, format='json')
+    assert response.status_code == 201
     response = client1.get(url)
 
     assert response.status_code == 200
@@ -204,7 +207,7 @@ def test_booking_list_includes_event_detail():
     booking = Booking.objects.first()
     assert response.status_code == 201 
 
-    response = client.get(reverse('bookings'))
+    response = client.get(url)
 
     assert response.status_code == 200
     assert 'event_detail' in response.data['results'][0]
@@ -263,7 +266,3 @@ def test_user_cannot_cancel_others_booking():
     assert response.status_code == 404
     booking.refresh_from_db()
     assert booking.status == "Confirmed"
-
-@pytest.mark.django_db
-def test_cannot_book_for_past_event():
-    
