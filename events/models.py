@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-
 class UserProfile(models.Model):
     ROLE_CHOICES = [
         ('Organizer', 'Organizer'),
@@ -15,7 +14,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile ({self.role})"
 
-
 class Event(models.Model):
     CATEGORY_CHOICES=[
         ('Conference', 'Conference'),
@@ -27,20 +25,30 @@ class Event(models.Model):
     description = models.TextField()
     location = models.CharField(max_length=20)
     date_time = models.DateTimeField()
-    total_tickets = models.IntegerField()
-    available_tickets = models.IntegerField(blank=True, null=True)
-    ticket_price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.CharField(max_length=25, choices=CATEGORY_CHOICES)
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='events')
-
-    def save(self, *args, **kwargs):
-        if not self.pk or self.available_tickets is None:
-            self.available_tickets = self.total_tickets
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.title}"
 
+class TicketType(models.Model):
+    NAME_CHOICES = [
+        ("VIP", 'VIP'),
+        ("Regular", "Regular"),
+        ("V.VIP", "V.VIP"),
+    ]
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='ticket_type')
+    name = models.CharField(max_length=15, choices=NAME_CHOICES, default='Regular')
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+    total_quantity = models.IntegerField()
+    available_quantity = models.IntegerField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk or self.available_quantity is None:
+            self.available_quantity = self.total_quantity
+            super().save(*args, **kwargs)
+    def __str__(self):
+        return f"{self.event.title} - {self.name} (${self.price})"
 class Booking(models.Model):
     STATUS_CHOICES=[
         ('Confirmed', 'Confirmed'),
@@ -48,11 +56,10 @@ class Booking(models.Model):
     ]
     user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='bookings')
     event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, related_name='event_bookings')
+    ticket_type = models.ForeignKey(TicketType, on_delete=models.CASCADE, null=True, blank=True, related_name='bookings')
     tickets_booked = models.IntegerField(default= 1)
     booking_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20 , choices=STATUS_CHOICES, default='Confirmed')
 
     def __str__(self):
         return f"Booking by {self.user.username} - {self.status}"
-
-

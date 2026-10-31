@@ -3,7 +3,7 @@ from .models import Event, Booking, UserProfile
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'total_tickets', 'available_tickets', 'ticket_price')
+    list_display = ('id', 'title')
     search_fields = ('title', 'location')
 
 @admin.register(Booking)
