@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, Booking, Event
+from .models import UserProfile, Booking, Event, TicketType
 from django.db.models import Sum
 from django.db import transaction
 
@@ -25,60 +25,52 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['user','id','role','bio','phone_number','profile_picture']
         read_only_fields = ['id','user']
-
+class TicketTypeSerializer(serializers.ModelSerializer):
+     class Meta:
+          model = TicketType
+          fields = ['id', 'name', 'price', 'total_quantity', 'available_quantity']
+          read_only_fields = ['available_quantity']
 class EventSerializer(serializers.ModelSerializer):
     organizer = serializers.ReadOnlyField(source='organizer.username')
-    available_tickets = serializers.IntegerField(read_only = True)
+    ticket_type = TicketTypeSerializer(many = True)
     class Meta:
         model = Event
-        fields = '__all__';
+        fields = ['id', 'title', 'ticket_type', 'description', 'location', 'date_time', 'category', 'organizer']
+        read_only_fields = ['id', 'ticket_type', 'organizer']
 class EventSummarySerializer(serializers.ModelSerializer):
      class Meta:
           model = Event
-          fields = ['id', 'title', 'location', 'date_time', 'ticket_price']
+          fields = ['id', 'title', 'location', 'date_time']
 
 class BookingSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
-    event_detail = EventSummarySerializer(source= 'event',read_only = True)
+    event_detail = EventSummarySerializer(source= 'event', read_only = True)
     class Meta: 
         model = Booking
-        fields = ['id','user','event','event_detail','tickets_booked','booking_date','status']
+        fields = ['id','user','event','ticket_type','event_detail','tickets_booked','booking_date','status']
         read_only_fields = ['user', 'booking_date']
         
     def validate(self, data):
         if self.instance and self.instance.status == 'Cancelled':
                     raise serializers.ValidationError("ይህ ቲኬት አስቀድሞ ተሰርዟል!")
         if not self.instance:
-            event = data.get('event')
-            tickets_booked = data.get('tickets_booked')
-
+            tickets_booked = data.get('tickets_booked', 1)
+            ticket_type = data.get('ticket_type')
+            
             if tickets_booked <= 0 :
                 raise serializers.ValidationError("መግዛት የሚቻለው ትኬት ከ 0 በላይ መሆን አለበት! ")
-
-            total_booked_dict = Booking.objects.filter(
-                 event = event, 
-                 status = "Confirmed"
-            ).aggregate(Sum('tickets_booked'))
-
-            total_booked_tickets = total_booked_dict['tickets_booked__sum'] or 0
-            actual_remaining_tickets = event.total_tickets - total_booked_tickets
-
-            if tickets_booked >actual_remaining_tickets:
-                raise serializers.ValidationError (f"በቂ ቲኬት የለም የቀረው ቲኬት ብዛት {actual_remaining_tickets} ብቻ ነው።")
+            
+            if ticket_type and tickets_booked:
+                if tickets_booked > ticket_type.available_quantity:
+                    raise serializers.ValidationError(f"ለመረጡት የቲኬት አይነት በቂ ቀሪ ትኬት የለም! የቀረው {ticket_type.available_quantity} ብቻ ነው።")
         return data
     def create(self, validated_data):
         with transaction.atomic():
-             event = Event.objects.select_for_update().get(id=validated_data['event'].id)
-        event = validated_data['event']
-        tickets_booked = validated_data['tickets_booked']
+            ticket_type = TicketType.objects.select_for_update().get(id=validated_data['ticket_type'].id)
+            ticket_type = validated_data['ticket_type']
+            tickets_booked = validated_data['tickets_booked', 1]
 
-        booking = Booking.objects.create(**validated_data)
-        total_booked_tickets = Booking.objects.filter(
-             event = event,
-             status= "Confirmed"
-        ).aggregate(Sum('tickets_booked'))['tickets_booked__sum'] or 0
-
-        event.available_tickets = event.total_tickets - total_booked_tickets
-        event.save()
-
-        return booking
+            booking = Booking.objects.create(**validated_data)
+            ticket_type.available_quantity -= tickets_booked
+            ticket_type.save()
+            return booking
