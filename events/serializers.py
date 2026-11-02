@@ -66,11 +66,12 @@ class BookingSerializer(serializers.ModelSerializer):
         return data
     def create(self, validated_data):
         with transaction.atomic():
-            ticket_type = TicketType.objects.select_for_update().get(id=validated_data['ticket_type'].id)
-            ticket_type = validated_data['ticket_type']
-            tickets_booked = validated_data['tickets_booked', 1]
-
             booking = Booking.objects.create(**validated_data)
-            ticket_type.available_quantity -= tickets_booked
-            ticket_type.save()
+            ticket_type_instance = validated_data.get('ticket_type')
+            tickets_booked = validated_data.get('tickets_booked', 1)
+            
+            if ticket_type_instance:
+                ticket = TicketType.objects.get(id=ticket_type_instance.id)
+                ticket.available_quantity -= tickets_booked
+                ticket.save()
             return booking
