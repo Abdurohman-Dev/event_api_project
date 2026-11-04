@@ -46,7 +46,7 @@ class TicketType(models.Model):
     def save(self, *args, **kwargs):
         if not self.pk or self.available_quantity is None:
             self.available_quantity = self.total_quantity
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
     def __str__(self):
         return f"{self.event.title} - {self.name} (${self.price})"
 class Booking(models.Model):
@@ -56,6 +56,7 @@ class Booking(models.Model):
     ]
     user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='bookings')
     event = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, related_name='event_bookings')
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     ticket_type = models.ForeignKey(TicketType, on_delete=models.CASCADE, null=True, blank=True, related_name='bookings')
     tickets_booked = models.IntegerField(default= 1)
     booking_date = models.DateTimeField(auto_now_add=True)

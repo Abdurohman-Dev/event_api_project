@@ -158,3 +158,5 @@ REST_FRAMEWORK = {
 import os 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 CORS_ALLOW_ALL_ORIGINS = True
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@eventmanagement.come'

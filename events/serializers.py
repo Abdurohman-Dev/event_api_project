@@ -47,7 +47,7 @@ class BookingSerializer(serializers.ModelSerializer):
     event_detail = EventSummarySerializer(source= 'event', read_only = True)
     class Meta: 
         model = Booking
-        fields = ['id','user','event','ticket_type','event_detail','tickets_booked','booking_date','status']
+        fields = ['id','user','event','ticket_type','event_detail','tickets_booked', 'total_price','booking_date','status']
         read_only_fields = ['user', 'booking_date']
         
     def validate(self, data):
@@ -65,13 +65,13 @@ class BookingSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(f"ለመረጡት የቲኬት አይነት በቂ ቀሪ ትኬት የለም! የቀረው {ticket_type.available_quantity} ብቻ ነው።")
         return data
     def create(self, validated_data):
+        qty = validated_data.get("tickets_booked", 1)
         with transaction.atomic():
-            booking = Booking.objects.create(**validated_data)
-            ticket_type_instance = validated_data.get('ticket_type')
-            tickets_booked = validated_data.get('tickets_booked', 1)
-            
-            if ticket_type_instance:
-                ticket = TicketType.objects.get(id=ticket_type_instance.id)
-                ticket.available_quantity -= tickets_booked
-                ticket.save()
-            return booking
+            ticket = TicketType.objects.select_for_update().get(pk=validated_data["ticket_type"].pk)
+            if ticket.available_quantity < qty:
+                 raise serializers.ValidationError({"tickets_booked": f"only {ticket.available_quantity} tickets left."})
+            ticket.available_quantity -= qty
+            ticket.save(update_fields=["available_quantity"])
+
+            validated_data["total_price"] = ticket.price * qty
+            return Booking.objects.create(**validated_data)
