@@ -10,7 +10,8 @@ from .pagination import StandardResultsSetPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
-
+from django.core.mail import send_mail
+from django.conf import settings
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -43,7 +44,20 @@ class BookingListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Booking.objects.filter(user= self.request.user).select_related('event', 'user', 'ticket_type').order_by('-id')
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        booking = serializer.save(user=self.request.user)
+        if booking.user.email:
+            send_mail(
+                subject=f"Booking Confirmation: {booking.event.title}",
+                message=(
+                    f"hello {booking.user.username}, \n\n"
+                    f"for '{booking.event.title}' event the {booking.tickets_booked}"
+                    f"({booking.ticket_type.name}) Your ticket registration was successful. \n\n"
+                    f"Thank You!"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[booking.user.email],
+                fail_silently=True,
+            )
 class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer

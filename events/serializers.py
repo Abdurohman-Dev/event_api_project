@@ -48,7 +48,7 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta: 
         model = Booking
         fields = ['id','user','event','ticket_type','event_detail','tickets_booked', 'total_price','booking_date','status']
-        read_only_fields = ['user', 'booking_date']
+        read_only_fields = ['user', 'booking_date', 'total_price', 'status']
         
     def validate(self, data):
         if self.instance and self.instance.status == 'Cancelled':
