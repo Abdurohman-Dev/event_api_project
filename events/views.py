@@ -80,6 +80,18 @@ class BookingCancelView(generics.GenericAPIView):
         booking.ticket_type.available_quantity += booking.tickets_booked
         booking.ticket_type.save()
         booking.save()
+        if booking.user.email:
+            send_mail(
+                subject=f"Booking Cancelled: {booking.event.title}",
+                message=(
+                    f"hello {booking.user.username}, \n\n"
+                    f"the {booking.event.title} are cancel successfully.\n\n"
+                    f"thank you"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[booking.user.email],
+                fail_silently= True,
+            )
         return Response({"message": "Booking cancelled successfully!"}, status=status.HTTP_200_OK)
 class UserHostedEventsView(generics.ListAPIView):
     serializer_class = EventSerializer
