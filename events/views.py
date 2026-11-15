@@ -10,8 +10,7 @@ from .pagination import StandardResultsSetPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.mail import send_mail
-from django.conf import settings
+from .utils import send_booking_email
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -45,19 +44,15 @@ class BookingListCreateView(generics.ListCreateAPIView):
         return Booking.objects.filter(user= self.request.user).select_related('event', 'user', 'ticket_type').order_by('-id')
     def perform_create(self, serializer):
         booking = serializer.save(user=self.request.user)
-        if booking.user.email:
-            send_mail(
-                subject=f"Booking Confirmation: {booking.event.title}",
-                message=(
-                    f"hello {booking.user.username}, \n\n"
-                    f"for '{booking.event.title}' event the {booking.tickets_booked}"
-                    f"({booking.ticket_type.name}) Your ticket registration was successful. \n\n"
-                    f"Thank You!"
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[booking.user.email],
-                fail_silently=True,
-            )
+        send_booking_email(
+            subject=f"Booking Confirmation: {booking.event.title}",
+            message=(
+                f"Hello {booking.user.username}, \n\n"
+                f"Your booking for {booking.event.title} is confirmed!\n\n"
+                f"Thank you!"
+            ),
+            recipient_email=booking.user.email,
+        )
 class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
@@ -80,18 +75,15 @@ class BookingCancelView(generics.GenericAPIView):
         booking.ticket_type.available_quantity += booking.tickets_booked
         booking.ticket_type.save()
         booking.save()
-        if booking.user.email:
-            send_mail(
-                subject=f"Booking Cancelled: {booking.event.title}",
-                message=(
-                    f"hello {booking.user.username}, \n\n"
-                    f"the {booking.event.title} are cancel successfully.\n\n"
-                    f"thank you"
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[booking.user.email],
-                fail_silently= True,
-            )
+        send_booking_email(
+            subject=f"Booking Cancelled: {booking.event.title}",
+            message=(
+                f"hello {booking.user.username}, \n\n"
+                f"Your booking for {booking.event.title} has been cancelled successfully.\n\n"
+                f"Thank you!"
+            ),
+            recipient_email=booking.user.email,
+        )
         return Response({"message": "Booking cancelled successfully!"}, status=status.HTTP_200_OK)
 class UserHostedEventsView(generics.ListAPIView):
     serializer_class = EventSerializer
