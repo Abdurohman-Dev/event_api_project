@@ -1,9 +1,9 @@
 import pytest 
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
-from events.models import Booking, Event
+from events.models import Booking, Event, TicketType
 from django.urls import reverse
-
+from django.core import mail
 User = get_user_model()
 
 @pytest.mark.django_db
@@ -266,3 +266,72 @@ def test_user_cannot_cancel_others_booking():
     assert response.status_code == 404
     booking.refresh_from_db()
     assert booking.status == "Confirmed"
+@pytest.mark.django_db
+def test_booking_creation_sends_confirmation_email():
+    organizer = User.objects.create_user(username="org1", password="password")
+    customer = User.objects.create_user(username='cust1', email='cust1@gmail.com', password='password1234')
+    event = Event.objects.create(
+        title = "Django Summit",
+        description = "Tech conference", 
+        location = "Addis Ababa", 
+        date_time= "2026-11-20T10:00:00Z",
+        category = "Tech", 
+        organizer = organizer
+    )
+    ticket_type = TicketType.objects.create(
+        event = event,
+        name = "Regular", 
+        price = "100.00", 
+        total_quantity = 20
+    )
+    payload = {
+        "event": event.id,
+        "ticket_type": ticket_type.id, 
+        "tickets_booked": 10
+    }
+    client = APIClient()
+    client.force_authenticate(user = customer)
+    url = reverse('bookings')
+    response = client.post(url, payload, format='json')
+
+    assert response.status_code == 201
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].subject == "Booking Confirmation: Django Summit"
+    assert mail.outbox[0].to == ['cust1@gmail.com']
+    assert "Hello cust1" in mail.outbox[0].body
+@pytest.mark.django_db
+def test_booking_cancellation_sends_cancellation_email():
+    organizer = User.objects.create_user(username="org2", password="password")
+    customer = User.objects.create_user(username='cust2', email='cust2@gmail.com', password='password1234')
+    event = Event.objects.create(
+        title = "Python Meetup",
+        description = "Community meetup", 
+        location = "semera", 
+        date_time= "2026-11-20T10:00:00Z",
+        category = "Tech", 
+        organizer = organizer
+    )
+    ticket_type = TicketType.objects.create(
+        event = event,
+        name = "VIP", 
+        price = "250.00", 
+        total_quantity = 10
+    )
+    client = APIClient()
+    client.force_authenticate(user = customer)
+    
+    create_res = client.post(reverse('bookings'), {
+        "event": event.id,
+        "ticket_type": ticket_type.id, 
+        "tickets_booked": 1
+    }, format= 'json')
+
+    assert create_res.status_code == 201
+    booking = Booking.objects.first()
+    cancel_url = reverse('booking-cancel', args=[booking.id])
+    cancel_res = client.post(cancel_url)
+
+    assert cancel_res.status_code == 200
+    assert len(mail.outbox) == 2
+    assert mail.outbox[1].subject == "Booking Cancelled: Python Meetup"
+    assert mail.outbox[1].to == ['cust2@gmail.com']

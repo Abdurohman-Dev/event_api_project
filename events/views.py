@@ -83,6 +83,7 @@ class BookingCancelView(generics.GenericAPIView):
                 f"Thank you!"
             ),
             recipient_email=booking.user.email,
+            
         )
         return Response({"message": "Booking cancelled successfully!"}, status=status.HTTP_200_OK)
 class UserHostedEventsView(generics.ListAPIView):
