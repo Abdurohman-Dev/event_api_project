@@ -47,11 +47,16 @@ class BookingListCreateView(generics.ListCreateAPIView):
         send_booking_email(
             subject=f"Booking Confirmation: {booking.event.title}",
             message=(
-                f"Hello {booking.user.username}, \n\n"
-                f"Your booking for {booking.event.title} is confirmed!\n\n"
+                f"Hello {booking.user.username},\n\n"
+                f"Your booking for {booking.event.title} | Ticket type: {booking.ticket_type.name} ticket booked: {booking.tickets_booked}\nand Total price: {booking.total_price} is confirmed!\n\n"
                 f"Thank you!"
             ),
             recipient_email=booking.user.email,
+        )
+        send_booking_email(
+            subject=f"New Booking Alert: {booking.event.title}",
+            message=f"{booking.user.username} has successfully booked {booking.tickets_booked} tickets.", 
+            recipient_email=booking.event.organizer.email,
         )
 class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = UserProfile.objects.all()
@@ -78,12 +83,16 @@ class BookingCancelView(generics.GenericAPIView):
         send_booking_email(
             subject=f"Booking Cancelled: {booking.event.title}",
             message=(
-                f"hello {booking.user.username}, \n\n"
-                f"Your booking for {booking.event.title} has been cancelled successfully.\n\n"
+                f"hello {booking.user.username},\n\n"
+                f"Your booking for {booking.event.title} | Ticket type: {booking.ticket_type.name}  has been cancelled successfully.\n and cash back {booking.total_price}\n\n"
                 f"Thank you!"
             ),
             recipient_email=booking.user.email,
-            
+        )
+        send_booking_email(
+            subject=f"Booking cancellation Alert: {booking.event.title}",
+            message=f"{booking.user.username} has cancelled {booking.tickets_booked} tickets successfully",
+            recipient_email=booking.event.organizer.email,
         )
         return Response({"message": "Booking cancelled successfully!"}, status=status.HTTP_200_OK)
 class UserHostedEventsView(generics.ListAPIView):

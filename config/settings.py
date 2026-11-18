@@ -152,7 +152,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10/minute',
-        'user': '30/minute'
+        'user': '30/days'
     },
 }
 import os 
