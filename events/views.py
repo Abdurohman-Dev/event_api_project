@@ -48,14 +48,17 @@ class BookingListCreateView(generics.ListCreateAPIView):
             subject=f"Booking Confirmation: {booking.event.title}",
             message=(
                 f"Hello {booking.user.username},\n\n"
-                f"Your booking for {booking.event.title} | Ticket type: {booking.ticket_type.name} ticket booked: {booking.tickets_booked}\nand Total price: {booking.total_price} is confirmed!\n\n"
-                f"Thank you!"
+                f"Your booking is confirmed! Here are your ticket details:\n- Event: {booking.event.title}\n- Ticket Type: {booking.ticket_type.name}\n- Quantity: {booking.tickets_booked}\n- Total price: ${booking.total_price} is confirmed!\n\n"
+                f"Thank you for booking with us!"
             ),
             recipient_email=booking.user.email,
         )
         send_booking_email(
             subject=f"New Booking Alert: {booking.event.title}",
-            message=f"{booking.user.username} has successfully booked {booking.tickets_booked} tickets.", 
+            message=(
+                f"Hello {booking.event.organizer.username},\n\n"
+                f"New booking received for {booking.event.title}:\n- Customer: {booking.user.username}\n- Ticket Type: {booking.ticket_type.name}\n- Tickets Booked: {booking.tickets_booked}\n- Total Amount: ${booking.total_price}"
+            ),
             recipient_email=booking.event.organizer.email,
         )
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -83,15 +86,18 @@ class BookingCancelView(generics.GenericAPIView):
         send_booking_email(
             subject=f"Booking Cancelled: {booking.event.title}",
             message=(
-                f"hello {booking.user.username},\n\n"
-                f"Your booking for {booking.event.title} | Ticket type: {booking.ticket_type.name}  has been cancelled successfully.\n and cash back {booking.total_price}\n\n"
-                f"Thank you!"
+                f"Hello {booking.user.username},\n\n"
+                f"Your booking has been cancelled! Here are the cancellation details:\n- Event: {booking.event.title}\n- Ticket type: {booking.ticket_type.name}\n- Quantity Cancelled: {booking.tickets_booked}\n- Refund Amount: ${booking.total_price}\n\n"
+                f"We hope to see you at furure events!"
             ),
             recipient_email=booking.user.email,
         )
         send_booking_email(
             subject=f"Booking cancellation Alert: {booking.event.title}",
-            message=f"{booking.user.username} has cancelled {booking.tickets_booked} tickets successfully",
+            message=(
+                f"Hello {booking.event.organizer.username},\n\n"
+                f"A booking has been cancelled for {booking.event.title}:\n- Customer: {booking.user.username}\n- Ticket Type: {booking.ticket_type.name}\n- Tickets Cancelled: {booking.tickets_booked}\n- Refunded Amount: ${booking.total_price}"
+                ),
             recipient_email=booking.event.organizer.email,
         )
         return Response({"message": "Booking cancelled successfully!"}, status=status.HTTP_200_OK)
