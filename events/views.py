@@ -88,12 +88,12 @@ class BookingCancelView(generics.GenericAPIView):
             message=(
                 f"Hello {booking.user.username},\n\n"
                 f"Your booking has been cancelled! Here are the cancellation details:\n- Event: {booking.event.title}\n- Ticket type: {booking.ticket_type.name}\n- Quantity Cancelled: {booking.tickets_booked}\n- Refund Amount: ${booking.total_price}\n\n"
-                f"We hope to see you at furure events!"
+                f"We hope to see you at future events!"
             ),
             recipient_email=booking.user.email,
         )
         send_booking_email(
-            subject=f"Booking cancellation Alert: {booking.event.title}",
+            subject=f"Booking Cancellation Alert: {booking.event.title}",
             message=(
                 f"Hello {booking.event.organizer.username},\n\n"
                 f"A booking has been cancelled for {booking.event.title}:\n- Customer: {booking.user.username}\n- Ticket Type: {booking.ticket_type.name}\n- Tickets Cancelled: {booking.tickets_booked}\n- Refunded Amount: ${booking.total_price}"

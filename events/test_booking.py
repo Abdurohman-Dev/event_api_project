@@ -268,7 +268,7 @@ def test_user_cannot_cancel_others_booking():
     assert booking.status == "Confirmed"
 @pytest.mark.django_db
 def test_booking_creation_sends_confirmation_email():
-    organizer = User.objects.create_user(username="org1", password="password")
+    organizer = User.objects.create_user(username="org1",email="org1@gmail.com", password="password")
     customer = User.objects.create_user(username='cust1', email='cust1@gmail.com', password='password1234')
     event = Event.objects.create(
         title = "Django Summit",
@@ -295,13 +295,17 @@ def test_booking_creation_sends_confirmation_email():
     response = client.post(url, payload, format='json')
 
     assert response.status_code == 201
-    assert len(mail.outbox) == 1
+    assert len(mail.outbox) == 2
     assert mail.outbox[0].subject == "Booking Confirmation: Django Summit"
     assert mail.outbox[0].to == ['cust1@gmail.com']
+    assert mail.outbox[1].subject == "New Booking Alert: Django Summit"
+    assert mail.outbox[1].to == ['org1@gmail.com']
+    assert "cust1" in mail.outbox[1].body
     assert "Hello cust1" in mail.outbox[0].body
+    assert "1000.00" in mail.outbox[0].body
 @pytest.mark.django_db
 def test_booking_cancellation_sends_cancellation_email():
-    organizer = User.objects.create_user(username="org2", password="password")
+    organizer = User.objects.create_user(username="org2", email="org2@gmail.com", password="password")
     customer = User.objects.create_user(username='cust2', email='cust2@gmail.com', password='password1234')
     event = Event.objects.create(
         title = "Python Meetup",
@@ -332,6 +336,8 @@ def test_booking_cancellation_sends_cancellation_email():
     cancel_res = client.post(cancel_url)
 
     assert cancel_res.status_code == 200
-    assert len(mail.outbox) == 2
-    assert mail.outbox[1].subject == "Booking Cancelled: Python Meetup"
-    assert mail.outbox[1].to == ['cust2@gmail.com']
+    assert len(mail.outbox) == 4
+    assert mail.outbox[2].subject == "Booking Cancelled: Python Meetup"
+    assert mail.outbox[2].to == ['cust2@gmail.com']
+    assert mail.outbox[3].subject == "Booking Cancellation Alert: Python Meetup"
+    assert mail.outbox[3].to == ['org2@gmail.com']
