@@ -2,13 +2,14 @@ from .serializers import UserProfileSerializer, BookingSerializer, EventSerializ
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.contrib.auth.models import User
-from .models import Booking, Event , UserProfile
+from .models import Booking, Event , UserProfile, TicketType
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, AllowAny
 from .permissions import IsOrganizerOrReadOnly, IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .pagination import StandardResultsSetPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
+from django.db.models import Sum
 from rest_framework import status
 from rest_framework.views import APIView
 from .utils import send_booking_email
@@ -117,3 +118,26 @@ class UserBookingsView(generics.ListAPIView):
     
 class OrganizerAnalyticsView(APIView):
     permission_classes = [IsAuthenticated,IsOrganizerOrReadOnly]
+
+    def get(self, request):
+        total_events = Event.objects.filter(organizer = request.user).count()
+        booking_stats = Booking.objects.filter(
+            event__organizer = request.user,
+            status = 'Confirmed'
+        ).aggregate(
+            tickets_booked = Sum('tickets_booked'),
+            total_price = Sum('total_price')
+        )
+        tickets_sold = booking_stats['tickets_booked'] or 0
+        revenue = booking_stats['total_price'] or 0
+        ticket_stats = TicketType.objects.filter(
+            event__organizer=request.user
+        ).aggregate(total_remaining=Sum('available_quantity'))
+
+        remaining_tickets = ticket_stats['total_remaining'] or 0
+        return Response({
+            "total_events": total_events,
+            "total_tickets_sold": tickets_sold,
+            "total_revenue": revenue,
+            "remaining_tickets": remaining_tickets
+        })
