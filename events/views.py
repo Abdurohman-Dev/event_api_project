@@ -10,6 +10,7 @@ from .pagination import StandardResultsSetPagination
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
 from .utils import send_booking_email
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -113,3 +114,6 @@ class UserBookingsView(generics.ListAPIView):
 
     def get_queryset(self):
         return Booking.objects.filter(user = self.request.user).select_related('event', 'user', 'ticket_type').order_by('-id')
+    
+class OrganizerAnalyticsView(APIView):
+    permission_classes = [IsAuthenticated,IsOrganizerOrReadOnly]
